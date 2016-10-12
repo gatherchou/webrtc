@@ -1,0 +1,27 @@
+{
+  "name": "webrtc",
+  "version": "0.0.1",
+  "description": "null",
+  "main": "server.js",
+  "dependencies": {
+    "express": "^4.14.0",
+    "socket.io": "^1.5.0"
+  },
+  "devDependencies": {
+    "express": "~4.13.4",
+    "socket.io": "*"
+  },
+  "scripts": {
+    "test": "node server.js",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "null"
+  },
+  "keywords": [
+    "null"
+  ],
+  "author": "akira",
+  "license": "UNLICENSED"
+}
