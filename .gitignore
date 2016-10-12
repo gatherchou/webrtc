@@ -1,3 +1,7 @@
 # Dependency directories
 node_modules
 
+#key 
+server.crt
+server.key
+server.csr
