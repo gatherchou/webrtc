@@ -11,8 +11,8 @@
   <button type="button" onclick="hangUp();">Hang Up</button>
   <br />
   <div>
+  <video id="remote-video" autoplay style="width: 720px; height: 540px; border: 1px solid black;"></video>
    <video id="local-video" autoplay style="width: 240px; height: 180px; border: 1px solid black;"></video>
-   <video id="remote-video" autoplay style="width: 240px; height: 180px; border: 1px solid black;"></video>
  </div>
  
  <p>
@@ -35,7 +35,7 @@
    <button type="button" onclick="onICE();">Receive ICE Candidates</button>
  </p>
  
- 
+ <script src="/socket.io/socket.io.js"></script>
  <script>
   var localVideo = document.getElementById('local-video');
   var remoteVideo = document.getElementById('remote-video');
@@ -52,6 +52,33 @@
   var textToReceiveICE = document.getElementById('text-for-receive-ice');
   var iceSeparator = '------ ICE Candidate -------';
   var CR = String.fromCharCode(13);
+
+  var socket = io();
+  var socketReady = false;
+
+  socket.on('connect', onOpened).on('message', onMessage);
+
+  function onOpened(evt) {
+    console.log('socket opened');
+    socketReady = true;
+  }
+
+  function onMessage(evt) {
+    if (evt.type === 'offer') {
+      console.log("Received offer, set offer, sending answer...");
+      onOffer(evt);
+    } else if (evt.type === 'answer' && peerStarted) {
+      console.log("Received answer, setting answer SDP");
+      onAnswer(evt);
+    } else if (evt.type === 'candidate' && peerStarted) {
+      console.log("Received ICE candidate...");
+      onCandidate(evt);
+    } else if (evt.type === 'user disconnected' && peerStarted) {
+      console.log("disconnected");
+      stop();
+    }
+  }
+
   
   function onSDP() {
     var text = textToReceiveSDP.value;
@@ -90,6 +117,7 @@
     console.log(evt);
     setOffer(evt);
     sendAnswer(evt);
+    peerStarted = true;
   }
   
   function onAnswer(evt) {
@@ -111,6 +139,7 @@
     console.log(text);
     
     /*socket.ioを用いてtextのｓｄｐ情報をsocketサーバに送信*/
+    socket.json.send(sdp);
     textForSendSDP.value = text;
     textForSendSDP.focus();
     textForSendSDP.select();
@@ -123,6 +152,8 @@
 
     textForSendICE.value = (textForSendICE.value + CR + iceSeparator + CR + text + CR);
     textForSendICE.scrollTop = textForSendICE.scrollHeight;
+
+    socket.json.send(candidate);
   }
   
   // ---------------------- video handling -----------------------
@@ -131,7 +162,7 @@
     navigator.webkitGetUserMedia({video: true, audio: true},
     function (stream) { // success
       localStream = stream;
-      localVideo.src = window.webkitURL.createObjectURL(stream);
+      localVideo.src = window.URL.createObjectURL(stream);
       localVideo.play();
       localVideo.volume = 0;
     },
@@ -146,6 +177,7 @@
   function stopVideo() {
     localVideo.src = "";
     localStream.stop();
+    peerStarted = false;
   }
 
   // ---------------------- connection handling -----------------------
@@ -242,7 +274,7 @@
   // start the connection upon user request
   function connect() {
     //if (!peerStarted && localStream && channelReady) {
-      if (!peerStarted && localStream) {
+      if (!peerStarted && localStream && socketReady) {
         sendOffer();
         peerStarted = true;
       } else {
