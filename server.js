@@ -13,22 +13,63 @@ var server = https.createServer(credentials, app);
 
 var io = require('socket.io')(server);
 
+io.on('connection', function (socket) {
+	
+	socket.on('enter', function(roomname){
+		socket.join(roomname);
+		setRoomname(roomname);
+	})
+
+	socket.on('message', function(message){
+		message.from = socket.id;
+
+		var target = message.sendto;
+
+		if (target) {
+			socket.to(target).emit('message', message);
+			return;
+		}
+
+		emitMessage('message', message);
+	})
+
+	socket.on('disconnect', function(){
+		emitMessage('user disconnected', {id: socket.id});
+
+		var roomname = getRoomname();
+
+		if (roomname) {
+			socket.leave(roomname);
+		}
+	})
+	
+	function setRoomname(room) {
+		socket.roomname = room;
+	}
+
+	function emitMessage(type, message) {
+		var roomname = getRoomname();
+
+		if (roomname) {
+			socket.broadcast.to(roomname).emit(type, message);
+		}
+		else {
+			socket.broadcast.emit(type, message);
+		}
+	}
+
+	function getRoomname() {
+		var room = socket.roomname;
+		return room;
+	}
+});
+
 app.get('/', function(req, res){
 	res.sendfile('static/index.html');
-})
+});
 
-io.on('connection', function (socket) {
-	// console.log('a user connected');
-	// socket.on('disconnect', function () {
-	// 	console.log('user disconnected');
-	// });
-	socket.on('message', function (message) {
-		socket.broadcast.emit('message', message);
-	});
-
-	socket.on('disconnect', function () {
-		socket.broadcast.emit('user disconnected');
-	});
+app.get('/room', function(req, res){
+	res.sendfile('static/multi.html');
 });
 
 server.listen(3000);
