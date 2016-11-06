@@ -33,7 +33,7 @@
   let localStream = null;
   let peerConnections = [];
   let remoteVideos = [];
-  const MAX_CONNECTION_COUNT = 3;
+  const MAX_CONNECTION_COUNT = 5;
 
   // --- multi video ---
   let container = document.getElementById('container');
@@ -48,31 +48,32 @@
   // ----- use socket.io ---
   let socket = io();
   let room = getRoomName();
+
   socket.on('connect', function(evt) {
-    console.log('socket.io connected. enter room=' + room );
     socket.emit('enter', room);
   });
+
   socket.on('message', function(message) {
-    console.log('message:', message);
+    // console.log('message:', message);
     let fromId = message.from;
 
     if (message.type === 'offer') {
       // -- got offer ---
-      console.log('Received offer ...');
+      // console.log('Received offer ...');
       let offer = new RTCSessionDescription(message);
       setOffer(fromId, offer);
     }
     else if (message.type === 'answer') {
       // --- got answer ---
-      console.log('Received answer ...');
+      // console.log('Received answer ...');
       let answer = new RTCSessionDescription(message);
       setAnswer(fromId, answer);
     }
     else if (message.type === 'candidate') {
       // --- got ICE candidate ---
-      console.log('Received ICE candidate ...');
+      // console.log('Received ICE candidate ...');
       let candidate = new RTCIceCandidate(message.ice);
-      console.log(candidate);
+      // console.log(candidate);
       addIceCandidate(fromId, candidate);
     }
     else if (message.type === 'call me') {
@@ -99,8 +100,8 @@
       }
     }
   });
+
   socket.on('user disconnected', function(evt) {
-    console.log('====user disconnected==== evt:', evt);
     let id = evt.id;
     if (isConnectedWith(id)) {
       stopConnection(id);
@@ -117,8 +118,7 @@
     socket.emit('message', msg);
   }
 
-  // -- room名を取得 --
-  function getRoomName() { // たとえば、 URLに  ?roomname  とする
+  function getRoomName() { 
     let url = document.location.href;
     let args = url.split('?');
     if (args.length > 1) {
@@ -288,11 +288,9 @@
   
   function getDeviceStream(option) {
     if ('getUserMedia' in navigator.mediaDevices) {
-      console.log('navigator.mediaDevices.getUserMadia');
       return navigator.mediaDevices.getUserMedia(option);
     }
     else {
-      console.log('wrap navigator.getUserMadia with Promise');
       return new Promise(function(resolve, reject){    
         navigator.getUserMedia(option,
           resolve,
@@ -327,16 +325,11 @@
   }
 
   function sendSdp(id, sessionDescription) {
-    console.log('---sending sdp ---');
-
     let message = { type: sessionDescription.type, sdp: sessionDescription.sdp };
-    console.log('sending SDP=' + message);
-    //ws.send(message);
     emitTo(id, message);
   }
 
   function sendIceCandidate(id, candidate) {
-    console.log('---sending ICE candidate ---');
     let obj = { type: 'candidate', ice: candidate };
     emitTo(id, obj);
   }
@@ -362,7 +355,6 @@
     else {
       peer.onaddstream = function(event) {
         let stream = event.stream;
-        console.log('-- peer.onaddstream() stream.id=' + stream.id);
         attachVideo(id, stream);
       };
     }
@@ -370,19 +362,10 @@
     // --- on get local ICE candidate
     peer.onicecandidate = function (evt) {
       if (evt.candidate) {
-        console.log(evt.candidate);
-
-        // Trickle ICE の場合は、ICE candidateを相手に送る
         sendIceCandidate(id, evt.candidate);
-
-        // Vanilla ICE の場合には、何もしない
-      } else {
+      }
+      else {
         console.log('empty ice event');
-
-        // Trickle ICE の場合は、何もしない
-        
-        // Vanilla ICE の場合には、ICE candidateを含んだSDPを相手に送る
-        //sendSdp(id, peer.localDescription);
       }
     };
 
@@ -401,10 +384,7 @@
     };
 
     peer.oniceconnectionstatechange = function() {
-      console.log('== ice connection status=' + peer.iceConnectionState);
       if (peer.iceConnectionState === 'disconnected') {
-        console.log('-- disconnected --');
-        //hangUp();
         stopConnection(id);
       }
     };
@@ -418,8 +398,6 @@
     };
 
     peer.onremovestream = function(event) {
-      console.log('-- peer.onremovestream()');
-      //pauseVideo(remoteVideo);
       deleteRemoteStream(id);
       detachVideo(id);
     };
@@ -427,7 +405,6 @@
     
     // -- add local stream --
     if (localStream) {
-      console.log('Adding local stream...');
       peer.addStream(localStream);
     }
     else {
@@ -444,15 +421,9 @@
 
     peerConnection.createOffer()
     .then(function (sessionDescription) {
-      console.log('createOffer() succsess in promise');
       return peerConnection.setLocalDescription(sessionDescription);
     }).then(function() {
-      console.log('setLocalDescription() succsess in promise');
-
-      // -- Trickle ICE の場合は、初期SDPを相手に送る -- 
       sendSdp(id, peerConnection.localDescription);
-
-      // -- Vanilla ICE の場合には、まだSDPは送らない --
     }).catch(function(err) {
       console.error(err);
     });
@@ -465,7 +436,6 @@
     
     peerConnection.setRemoteDescription(sessionDescription)
     .then(function() {
-      console.log('setRemoteDescription(offer) succsess in promise');
       makeAnswer(id);
     }).catch(function(err) {
       console.error('setRemoteDescription(offer) ERROR: ', err);
@@ -473,7 +443,6 @@
   }
   
   function makeAnswer(id) {
-    console.log('sending Answer. Creating remote session description...' );
     let peerConnection = getConnection(id);
     if (! peerConnection) {
       console.error('peerConnection NOT exist!');
@@ -482,15 +451,9 @@
     
     peerConnection.createAnswer()
     .then(function (sessionDescription) {
-      console.log('createAnswer() succsess in promise');
       return peerConnection.setLocalDescription(sessionDescription);
     }).then(function() {
-      console.log('setLocalDescription() succsess in promise');
-
-      // -- Trickle ICE の場合は、初期SDPを相手に送る -- 
       sendSdp(id, peerConnection.localDescription);
-
-      // -- Vanilla ICE の場合には、まだSDPは送らない --
     }).catch(function(err) {
       console.error(err);
     });
