@@ -3,11 +3,22 @@
 <head>
   <title>WebRTC PtoP Video Chat</title>  
   <style type="text/css">
-    :-webkit-full-screen #remote-video{
+    body {
+      margin: 0;
+      padding: 0;
       width: 100%;
       height: 100%;
+    }
+
+    #remote-video {
+      /*font-size: 0;*/
       position: absolute;
-      z-index: 1;
+      object-fit: cover;
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      z-index: -1;
       
     }
 
@@ -15,8 +26,9 @@
       width: 240px; 
       height: 180px; 
       position: absolute;
-      bottom: 2%;
-      right: 1%;
+      bottom: 1%;
+      right: 2%;
+      z-index: 2;
     }
 
     button {
@@ -24,16 +36,25 @@
       z-index: 2;
     }
 
+    #btn {
+      position: absolute;
+      top: 3%;
+      left: 2%;
+      z-index: 2;
+    }
+
   </style>
 </head>
 <body onload="startVideo()">
-  <button type="button" onclick="connect();">Start Video</button>
-  <button type="button" onclick="stop();">Stop Video</button>
-  <br />
-  <div>
-    <video id="remote-video" autoplay style="width: 100%; height: 100%;"></video>
-    <video id="local-video" autoplay style=""></video>
+  <div id="btn">
+    <button type="button" onclick="connect();">Start Video</button>
+    <br/>
+    <br>
+    <button type="button" onclick="stop();">Stop Video</button>
   </div>
+  
+  <video id="remote-video" autoplay></video>
+  <video id="local-video" autoplay></video>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -115,7 +136,7 @@
     // ---------------------- video handling -----------------------
     // start local video
     function startVideo() {
-      navigator.webkitGetUserMedia({ video: {width: 1280, height: 720 }, audio: true}, function (stream) { // success
+      navigator.webkitGetUserMedia({ video: true, audio: false}, function (stream) { // success
         localStream = stream;
         localVideo.src = window.URL.createObjectURL(stream);
         localVideo.play();
@@ -213,6 +234,7 @@
       if (!peerStarted && localStream && socketReady) {
         sendOffer();
         peerStarted = true;
+        fullScreen();
       } 
       else {
         alert("Local stream not running yet - try again.");
@@ -223,6 +245,14 @@
       peerConnection.close();
       peerConnection = null;
       peerStarted = false;    
+    }
+
+    function fullScreen(){
+      var width = document.documentElement.clientWidth;
+      var height = document.documentElement.clientHeight;
+
+      console.log(width);
+      console.log(height);
     }
 
   </script>
