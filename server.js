@@ -14,7 +14,7 @@ var server = https.createServer(credentials, app);
 var io = require('socket.io')(server);
 
 io.on('connection', function (socket) {
-	
+
 	socket.on('enter', function(roomname){
 		socket.join(roomname);
 		setRoomname(roomname);
@@ -41,6 +41,7 @@ io.on('connection', function (socket) {
 		if (roomname) {
 			socket.leave(roomname);
 		}
+
 	})
 	
 	function setRoomname(room) {
@@ -62,6 +63,7 @@ io.on('connection', function (socket) {
 		var room = socket.roomname;
 		return room;
 	}
+
 });
 
 app.get('/', function(req, res){
