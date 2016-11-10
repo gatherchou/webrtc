@@ -3,29 +3,36 @@
 <head>
  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
  <title>multi party</title>
- <script src="/socket.io/socket.io.js"></script>
- <script>
-   function _assert(desc, v) {
-     if (v) {
-       return;
-     }
-     else {
-       let caller = _assert.caller || 'Top level';
-       console.error('ASSERT in %s, %s is :', caller, desc, v);
-     }
+ <style type="text/css">
+   body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  
+</style>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+ function _assert(desc, v) {
+   if (v) {
+     return;
    }
- </script>
+   else {
+     let caller = _assert.caller || 'Top level';
+     console.error('ASSERT in %s, %s is :', caller, desc, v);
+   }
+ }
+</script>
 </head>
-<body>
-  <button type="button" onclick="startVideo();">Start Video</button>
-  <button type="button" onclick="stopVideo();">Stop Video</button>
-  &nbsp;
-  <button type="button" onclick="connect();">Connect</button>
-  <button type="button" onclick="hangUp();">Hang Up</button> 
+<body onload="startVideo()">
+  <button type="button" onclick="connect();">Start Connection</button>
+  <button type="button" onclick="hangUp();">Stop Connection</button> 
   <div id="container">
   </div>
   <div>
-    <video id="local_video" autoplay style="width: 160px; height: 120px; border: 1px solid black;"></video>
+    <video id="local_video" autoplay></video>
   </div>
 </body>
 <script type="text/javascript">
@@ -34,6 +41,7 @@
   let peerConnections = [];
   let remoteVideos = [];
   const MAX_CONNECTION_COUNT = 5;
+  var sw = false;
 
   // --- multi video ---
   let container = document.getElementById('container');
@@ -238,8 +246,7 @@
     video.height = '360';
     video.id = elementId;
 
-    video.style.border = 'solid black 1px';
-    video.style.margin = '2px';
+    video.setAttribute("onclick", "toggle(event)");
 
     container.appendChild(video);
 
@@ -265,13 +272,8 @@
       console.error('getUserMedia error:', error);
       return;
     });
-  }
 
-  // stop local video
-  function stopVideo() {
-    pauseVideo(localVideo);
-    stopLocalStream(localStream);
-    localStream = null;
+    localVideo.style.cssText="width: 360px;height: 240px;position: absolute;bottom: 1%;right: 1%;z-index: 2;"
   }
 
   function stopLocalStream(stream) {
@@ -508,6 +510,30 @@
   // ---- multi party --
   function callMe() {
     emitRoom({type: 'call me'});
+  }
+
+  function fullScreen(event) {
+    var target = event.target;
+
+    target.style.cssText = "position: absolute;object-fit: cover;width: 100%;height: 100%;max-width: 100%;max-height: 100%;z-index: 1;top:0; left:0;"
+  }
+
+  function defaultScreen(event) {
+    var target = event.target;
+
+    target.style.cssText = "width: 480px;height: 360px;relative: absolute;z-index: 0;"
+  }
+
+
+  function toggle(event) {
+    if(sw == false){
+      sw = true;
+      fullScreen(event);
+    }
+    else{
+      sw = false;
+      defaultScreen(event);
+    }
   }
 
 </script>
