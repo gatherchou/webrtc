@@ -27,6 +27,7 @@
 </script>
 </head>
 <body onload="startVideo()">
+<p id="count"></p>
   <button type="button" onclick="connect();">Start Connection</button>
   <button type="button" onclick="hangUp();">Stop Connection</button> 
   <div id="container">
@@ -42,6 +43,8 @@
   let remoteVideos = [];
   const MAX_CONNECTION_COUNT = 5;
   var sw = false;
+  var count = document.getElementById('count');
+  var user;
 
   // --- multi video ---
   let container = document.getElementById('container');
@@ -56,6 +59,15 @@
   // ----- use socket.io ---
   let socket = io();
   let room = getRoomName();
+
+  socket.on('users', function(data){
+    if (data.number == 1){
+      count.innerHTML = "今ここにあなたしかいませんので、他のメンバーを少々お待ちください。"
+    }
+    else {
+      count.innerHTML = "今ここに" + data.number + "人がいます、Start Connectionボタンを押して、通話を開始してください。"
+    }
+  })
 
   socket.on('connect', function(evt) {
     socket.emit('enter', room);

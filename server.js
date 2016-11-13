@@ -2,6 +2,7 @@ var fs = require('fs');
 var https = require('https');
 var express = require('express');
 var app = express();
+var count = 0;
 
 
 var privateKey  = fs.readFileSync('./server.key', 'utf8');
@@ -14,6 +15,11 @@ var server = https.createServer(credentials, app);
 var io = require('socket.io')(server);
 
 io.on('connection', function (socket) {
+
+	count++;
+	socket.emit('users',{number:count}); 
+	socket.broadcast.emit('users', {number:count});
+
 
 	socket.on('enter', function(roomname){
 		socket.join(roomname);
@@ -34,6 +40,10 @@ io.on('connection', function (socket) {
 	})
 
 	socket.on('disconnect', function(){
+
+		count--;
+		socket.broadcast.emit('users',{number:count});
+
 		emitMessage('user disconnected', {id: socket.id});
 
 		var roomname = getRoomname();
