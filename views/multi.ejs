@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+ <title>multi party</title>
+ <link rel="stylesheet" type="text/css" href="/css/style.css">
+<script src="/socket.io/socket.io.js"></script>
+</head>
+<body onload="startVideo()">
+  <div id="ctrl">
+    <p id="count"></p>
+    <button type="button" onclick="connect();">Start Connection</button>
+    <button type="button" onclick="hangUp();">Stop Connection</button>
+  </div>
+  <div id="container">
+  </div>
+  <div>
+    <video id="local_video" autoplay></video>
+  </div>
+</body>
+<script type="text/javascript" src="/js/main.js"></script>
+</html>

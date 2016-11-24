@@ -1,8 +1,13 @@
 var fs = require('fs');
 var https = require('https');
+var path = require('path');
 var express = require('express');
 var app = express();
 var count = 0;
+
+app.use(express.static(path.join(__dirname, 'public')));
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
 
 
 var privateKey  = fs.readFileSync('./server.key', 'utf8');
@@ -77,11 +82,7 @@ io.on('connection', function (socket) {
 });
 
 app.get('/', function(req, res){
-	res.sendfile('static/index.html');
-});
-
-app.get('/room', function(req, res){
-	res.sendfile('static/multi.html');
+	res.render('multi');
 });
 
 server.listen(3000);
