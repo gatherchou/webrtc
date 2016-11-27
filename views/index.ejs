@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head></title>
+  <link rel="stylesheet" type="text/css" href="/stylesheets/style.css">
+  <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+  <script type="text/javascript" src="/js/jquery.min.js"></script>
+</head>
+<body>
+  <div class="pages">
+    <div class="app">
+      <div class="btn">
+        <button type="button" onclick="connect();">Start Connection</button>
+        <button type="button" onclick="hangUp();">Stop Connection</button>
+      </div>
+      <div id="container"></div>
+      <div>
+        <video id="local_video" autoplay></video>
+      </div>
+      <div class="chatArea">
+        <ul class="msgs"></ul>
+        <input class="inputMessage" placeholder="ここで入力..." />
+        <div class="userLists">
+          <h4>部屋にいる人</h4>
+          <ul class="listBody"></ul>
+        </div>
+      </div>
+    </div>
+    <div class="login">
+      <div class="form">
+        <h3 class="title">会話のためにお名前を入力してください</h3>
+        <input class="usernameInput" type="text" maxlength="14" />
+      </div>
+    </div>
+  </div>
+
+</body>
+<script type="text/javascript" src="/js/main.js"></script>
+</html>

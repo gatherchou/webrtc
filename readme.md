@@ -1,4 +1,6 @@
-#1.
+## start server
+    # node index.js
 
-https://url:3000/			p2p
-https://url:3000/room		multi
+## access
+
+https://localhost:3000
