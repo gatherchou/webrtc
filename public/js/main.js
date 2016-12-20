@@ -9,6 +9,20 @@ function _assert(desc, v) {
 }
 
 var socket = io();
+var $window = $(window);
+var $loginPage = $('.login');
+var $chatPage = $('.app');
+var $usernameInput = $('.usernameInput');
+var $userLists = $('.listBody');
+var $inputMessage = $('.inputMessage');
+var $messages = $('.msgs');
+var $currentInput = $usernameInput.focus();
+var $chatArea = $(".chatArea");
+var $container = $("#container");
+
+var username;
+var connected = false;
+var sw = false;
 
 let localVideo = document.getElementById('local_video');
 let localStream = null;
@@ -27,23 +41,6 @@ navigator.mozGetUserMedia || navigator.msGetUserMedia;
 RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
 RTCSessionDescription = window.RTCSessionDescription || window.webkitRTCSessionDescription || window.mozRTCSessionDescription;
 
-var $window = $(window);
-
-var $loginPage = $('.login');
-var $chatPage = $('.app');
-var $usernameInput = $('.usernameInput');
-var $userLists = $('.listBody');
-var $inputMessage = $('.inputMessage');
-var $messages = $('.msgs');
-var $currentInput = $usernameInput.focus();
-
-
-var $chatArea = $(".chatArea");
-var $container = $("#container");
-
-var username;
-var connected = false;
-var sw = false;
 
 
 socket.on('flash userLists', function (data){
@@ -64,51 +61,48 @@ socket.on('connect', function(evt) {
 });
 
 socket.on('message', function(message) {
-    // console.log('message:', message);
-    let fromId = message.from;
+  let fromId = message.from;
 
-    if (message.type === 'offer') {
-      // -- got offer ---
-      // console.log('Received offer ...');
-      let offer = new RTCSessionDescription(message);
-      setOffer(fromId, offer);
+  if (message.type === 'offer') {
+    // -- got offer ---
+    let offer = new RTCSessionDescription(message);
+    setOffer(fromId, offer);
+    console.log(offer.toString());
+  }
+  else if (message.type === 'answer') {
+    // --- got answer ---
+    let answer = new RTCSessionDescription(message);
+    setAnswer(fromId, answer);
+    console.log("answer : " + answer);
+  }
+  else if (message.type === 'candidate') {
+    // --- got ICE candidate ---
+    let candidate = new RTCIceCandidate(message.ice);
+    addIceCandidate(fromId, candidate);
+  }
+  else if (message.type === 'call me') {
+    if (! isReadyToConnect()) {
+      console.log('Not ready to connect, so ignore');
+      return;
     }
-    else if (message.type === 'answer') {
-      // --- got answer ---
-      // console.log('Received answer ...');
-      let answer = new RTCSessionDescription(message);
-      setAnswer(fromId, answer);
+    else if (! canConnectMore()) {
+      console.warn('TOO MANY connections, so ignore');
     }
-    else if (message.type === 'candidate') {
-      // --- got ICE candidate ---
-      // console.log('Received ICE candidate ...');
-      let candidate = new RTCIceCandidate(message.ice);
-      // console.log(candidate);
-      addIceCandidate(fromId, candidate);
-    }
-    else if (message.type === 'call me') {
-      if (! isReadyToConnect()) {
-        console.log('Not ready to connect, so ignore');
-        return;
-      }
-      else if (! canConnectMore()) {
-        console.warn('TOO MANY connections, so ignore');
-      }
 
-      if (isConnectedWith(fromId)) {
-          // already connnected, so skip
-          console.log('already connected, so ignore');
-        }
-        else {
-        // connect new party
-        makeOffer(fromId);
-      }
+    if (isConnectedWith(fromId)) {
+      // already connnected, so skip
+      console.log('already connected, so ignore');
     }
-    else if (message.type === 'bye') {
-      if (isConnectedWith(fromId)) {
-        stopConnection(fromId);
-      }
+    else {
+      // connect new party
+      makeOffer(fromId);
     }
+  }
+  else if (message.type === 'bye') {
+    if (isConnectedWith(fromId)) {
+      stopConnection(fromId);
+    }
+  }
 });
 
 socket.on('user disconnected', function(evt) {
@@ -129,7 +123,7 @@ function emitTo(id, msg) {
 }
 
 function getRoomName() { 
-  let url = document.location.href;
+  let url = $(location)[0].href;//document.location.href;
   let args = url.split('?');
   if (args.length > 1) {
     let room = args[1];
@@ -274,154 +268,156 @@ function startVideo() {
     });
 
     localVideo.style.cssText="width: 360px;height: 240px;position: fixed;bottom: 36%;right:0";
-}
-
-function stopLocalStream(stream) {
-  let tracks = stream.getTracks();
-  if (! tracks) {
-    console.warn('NO tracks');
-    return;
   }
 
-  for (let track of tracks) {
-    track.stop();
-  }
-}
-
-function getDeviceStream(option) {
-  if ('getUserMedia' in navigator.mediaDevices) {
-    return navigator.mediaDevices.getUserMedia(option);
-  }
-  else {
-    return new Promise(function(resolve, reject){    
-      navigator.getUserMedia(option,
-        resolve,
-        reject
-        );
-    });      
-  }
-}
-
-function playVideo(element, stream) {
-  if ('srcObject' in element) {
-    element.srcObject = stream;
-  }
-  else {
-    element.src = window.URL.createObjectURL(stream);
-  }
-  element.play();
-  element.volume = 0;
-}
-
-function pauseVideo(element) {
-  element.pause();
-  if ('srcObject' in element) {
-    element.srcObject = null;
-  }
-  else {
-    if (element.src && (element.src !== '') ) {
-      window.URL.revokeObjectURL(element.src);
+  function stopLocalStream(stream) {
+    let tracks = stream.getTracks();
+    if (! tracks) {
+      console.warn('NO tracks');
+      return;
     }
-    element.src = '';
+
+    for (let track of tracks) {
+      track.stop();
+    }
   }
-}
 
-function sendSdp(id, sessionDescription) {
-  let message = { type: sessionDescription.type, sdp: sessionDescription.sdp };
-  emitTo(id, message);
-}
+  function getDeviceStream(option) {
+    if ('getUserMedia' in navigator.mediaDevices) {
+      return navigator.mediaDevices.getUserMedia(option);
+    }
+    else {
+      return new Promise(function(resolve, reject){    
+        navigator.getUserMedia(option,
+          resolve,
+          reject
+          );
+      });      
+    }
+  }
 
-function sendIceCandidate(id, candidate) {
-  let obj = { type: 'candidate', ice: candidate };
-  emitTo(id, obj);
-}
+  function playVideo(element, stream) {
+    if ('srcObject' in element) {
+      element.srcObject = stream;
+    }
+    else {
+      element.src = window.URL.createObjectURL(stream);
+    }
+    element.play();
+    element.volume = 0;
+  }
+
+  function pauseVideo(element) {
+    element.pause();
+    if ('srcObject' in element) {
+      element.srcObject = null;
+    }
+    else {
+      if (element.src && (element.src !== '') ) {
+        window.URL.revokeObjectURL(element.src);
+      }
+      element.src = '';
+    }
+  }
+
+  function sendSdp(id, sessionDescription) {
+    let message = { type: sessionDescription.type, sdp: sessionDescription.sdp };
+    emitTo(id, message);
+    // console.log("sdp : " + message.sdp)
+  }
+
+  function sendIceCandidate(id, candidate) {
+    let obj = { type: 'candidate', ice: candidate };
+    emitTo(id, obj);
+  }
 
 // ---------------------- connection handling -----------------------
 function prepareNewConnection(id) {
+
   let pc_config = {"iceServers":[]};
   let peer = new RTCPeerConnection(pc_config);
 
-    // --- on get remote stream ---
-    if ('ontrack' in peer) {
-      peer.ontrack = function(event) {
-        let stream = event.streams[0];
-        console.log('-- peer.ontrack() stream.id=' + stream.id);
-        if (isRemoteVideoAttached(id)) {
-          console.log('stream already attached, so ignore');
-        }
-        else {
-          attachVideo(id, stream);
-        }
-      };
-    }
-    else {
-      peer.onaddstream = function(event) {
-        let stream = event.stream;
-        attachVideo(id, stream);
-      };
-    }
-
-    // --- on get local ICE candidate
-    peer.onicecandidate = function (evt) {
-      if (evt.candidate) {
-        sendIceCandidate(id, evt.candidate);
+  // --- on get remote stream ---
+  if ('ontrack' in peer) {
+    peer.ontrack = function(event) {
+      let stream = event.streams[0];
+      console.log('-- peer.ontrack() stream.id=' + stream.id);
+      if (isRemoteVideoAttached(id)) {
+        console.log('stream already attached, so ignore');
       }
       else {
-        console.log('empty ice event');
+        attachVideo(id, stream);
       }
     };
-
-    // --- when need to exchange SDP ---
-    peer.onnegotiationneeded = function(evt) {
-      console.log('-- onnegotiationneeded() ---');
+  }
+  else {
+    peer.onaddstream = function(event) {
+      let stream = event.stream;
+      attachVideo(id, stream);
     };
-
-    // --- other events ----
-    peer.onicecandidateerror = function (evt) {
-      console.error('ICE candidate ERROR:', evt);
-    };
-
-    peer.onsignalingstatechange = function() {
-      console.log('== signaling status=' + peer.signalingState);
-    };
-
-    peer.oniceconnectionstatechange = function() {
-      if (peer.iceConnectionState === 'disconnected') {
-        stopConnection(id);
-      }
-    };
-
-    peer.onicegatheringstatechange = function() {
-      console.log('==***== ice gathering state=' + peer.iceGatheringState);
-    };
-
-    peer.onconnectionstatechange = function() {
-      console.log('==***== connection state=' + peer.connectionState);
-    };
-
-    peer.onremovestream = function(event) {
-      deleteRemoteStream(id);
-      detachVideo(id);
-    };
-
-    // -- add local stream --
-    if (localStream) {
-      peer.addStream(localStream);
-    }
-    else {
-      console.warn('no local stream, but continue.');
-    }
-
-    return peer;
   }
 
-//
+  // --- on get local ICE candidate
+  peer.onicecandidate = function (evt) {
+    if (evt.candidate) {
+      sendIceCandidate(id, evt.candidate);
+    }
+    else {
+      console.log('empty ice event');
+    }
+  };
+
+  // --- when need to exchange SDP ---
+  peer.onnegotiationneeded = function(evt) {
+    console.log('-- onnegotiationneeded() ---');
+  };
+
+  // --- other events ----
+  peer.onicecandidateerror = function (evt) {
+    console.error('ICE candidate ERROR:', evt);
+  };
+
+  peer.onsignalingstatechange = function() {
+    console.log('== signaling status=' + peer.signalingState);
+  };
+
+  peer.oniceconnectionstatechange = function() {
+    if (peer.iceConnectionState === 'disconnected') {
+      stopConnection(id);
+    }
+  };
+
+  peer.onicegatheringstatechange = function() {
+    console.log('==***== ice gathering state=' + peer.iceGatheringState);
+  };
+
+  peer.onconnectionstatechange = function() {
+    console.log('==***== connection state=' + peer.connectionState);
+  };
+
+  peer.onremovestream = function(event) {
+    deleteRemoteStream(id);
+    detachVideo(id);
+  };
+
+  // -- add local stream --
+  if (localStream) {
+    peer.addStream(localStream);
+  }
+  else {
+    console.warn('no local stream, but continue.');
+  }
+
+  return peer;
+}
+
 function makeOffer(id) {
   _assert('makeOffer must not connected yet', (! isConnectedWith(id)) );
   peerConnection = prepareNewConnection(id);
   addConnection(id, peerConnection);
 
   peerConnection.createOffer().then(function (sessionDescription) {
+    sessionDescription.sdp = setBandwidth(sessionDescription.sdp);
     return peerConnection.setLocalDescription(sessionDescription);
   }).then(function() {
     sendSdp(id, peerConnection.localDescription);
@@ -450,6 +446,7 @@ function makeAnswer(id) {
   }
 
   peerConnection.createAnswer().then(function (sessionDescription) {
+    sessionDescription.sdp = setBandwidth(sessionDescription.sdp);
     return peerConnection.setLocalDescription(sessionDescription);
   }).then(function() {
     sendSdp(id, peerConnection.localDescription);
@@ -528,7 +525,7 @@ $window.keydown(function (event){
         startVideo();
       }
     }
-})
+  })
 
 // Sets the client's username
 function setUsername () {
@@ -544,7 +541,7 @@ function setUsername () {
       // Tell the server your username
       socket.emit('add user', username);
     }
-}
+  }
 
 // Sends a chat message
 function sendMessage () {
@@ -557,8 +554,8 @@ function sendMessage () {
       $messages.append($('<li>').text(username + " : " + message));
         // tell server to execute 'new message' and send along one parameter
         socket.emit('new message', message);
+      }
     }
-}
 
 // Prevents input from having injected markup
 function cleanInput (input) {
@@ -593,4 +590,12 @@ function defaultScreen(event) {
   $container.css({"height": "61%", "bottom":"35%"});
 
   target.style.cssText = "width: 480px;height: 360px;relative: relative;z-index: 0;margin-top: 1%;margin-left: 1%;"
+}
+
+function setBandwidth(sdp) {
+  var videoBandwidth = 20000;
+
+  sdp = sdp.replace(/a=mid:video\r\n/g, 'a=mid:video\r\nb=AS:' + videoBandwidth + '\r\n');
+
+  return sdp;
 }
