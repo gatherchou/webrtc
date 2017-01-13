@@ -11,6 +11,10 @@ var credentials = {key: privateKey, cert: certificate};
 var server = https.createServer(credentials, app);
 var io = require('socket.io')(server);
 
+var mongoose = require('mongoose');
+var db = mongoose.connect('mongodb://localhost/WebRTC');
+var userModel = require('./model/model.js');
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
@@ -21,6 +25,13 @@ var Port = app.get('port');
 app.get('/', function(req, res){
 	res.render('index');
 });
+
+app.get('/history', function(req, res){
+
+    userModel.find({}, function(err, docs){
+        res.render('history', {msgs: docs});
+    });
+})
 
 var userLists = {};
 
@@ -39,6 +50,14 @@ io.on('connection', function(socket){
     // when the client emits 'new message', this listens and executes
     socket.on('new message', function (data) {
     	// we tell the client to execute 'new message'
+        var new_msg = new userModel({
+            name: socket.username,
+            msg: data
+        })
+
+        new_msg.save(function(err){
+            if (err) {console.log(err);}
+        });
 
     	socket.broadcast.emit('new message', {
     		username: socket.username,

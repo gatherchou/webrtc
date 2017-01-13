@@ -53,7 +53,7 @@ socket.on('flash userLists', function (data){
 
 // Whenever the server emits 'new message', update the chat body
 socket.on('new message', function (data) {
-  $messages.append($('<li>').text(data.username + " : " + data.message));
+  postMsg(data.username, data.message);
 });
 
 socket.on('connect', function(evt) {
@@ -515,17 +515,17 @@ $window.keydown(function (event){
   if (!(event.ctrlKey || event.metaKey || event.altKey)) {
     $currentInput.focus();
   }
-    // When the client hits ENTER on their keyboard
-    if (event.which === 13) {
-      if (username) {
-        sendMessage();
-      } 
-      else {
-        setUsername();
-        startVideo();
-      }
+  // When the client hits ENTER on their keyboard
+  if (event.which === 13) {
+    if (username) {
+      sendMessage();
+    } 
+    else {
+      setUsername();
+      startVideo();
     }
-  })
+  }
+})
 
 // Sets the client's username
 function setUsername () {
@@ -551,7 +551,7 @@ function sendMessage () {
     // if there is a non-empty message and a socket connection
     if (message && connected) {
       $inputMessage.val('');
-      $messages.append($('<li>').text(username + " : " + message));
+      postMsg(username, message);
         // tell server to execute 'new message' and send along one parameter
         socket.emit('new message', message);
       }
@@ -559,7 +559,7 @@ function sendMessage () {
 
 // Prevents input from having injected markup
 function cleanInput (input) {
-  return $('<div/>').text(input).text();
+  return $('<div>').text(input).text();
 }
 
 
@@ -598,4 +598,8 @@ function setBandwidth(sdp) {
   sdp = sdp.replace(/a=mid:video\r\n/g, 'a=mid:video\r\nb=AS:' + videoBandwidth + '\r\n');
 
   return sdp;
+}
+
+function chatHistory() {
+  window.open(window.location.href+"history");
 }
