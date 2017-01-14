@@ -2,41 +2,34 @@
 <html>
 <head>
 	<title></title>
-	<script type="text/javascript" src="/js/jquery.min.js"></script>
-	
 	<style type="text/css">
-		ul{
-			padding-left: 10px;
-			padding-right: 10px;
-			list-style-type: none;
-			font-size: 120%;
-		}
-
-		ul :nth-child(odd){
-			background: #eee;
-		}
-
-		li {
-			padding-top: 5px;
-			padding-bottom: 5px;
-			word-wrap: break-word;
-		}
+		ul{padding-left: 10px;padding-right: 10px;list-style-type: none;font-size: 120%;}
+		ul :nth-child(odd){background: #eee;}
+		li {padding-top: 5px;padding-bottom: 5px;word-wrap: break-word;}
 	</style>
 </head>
-<body onload="timeFormat()">
-	<ul class="msgs"></ul>
-</body>
-<script type="text/javascript" src="/js/postMsg.js"></script>
-<script type="text/javascript">
-	var $messages = $('.msgs');
-	
-	function timeFormat(){
-		var msgs = '<%- JSON.stringify(msgs) %>';
-		msgs = JSON.parse(msgs);
+<body>
+	<h1>チャット履歴</h1>
 
-		for(var i in msgs){
-			postMsg(msgs[i].name, msgs[i].msg, msgs[i].time);
-		}
-	}
-</script>
+	<ul class="msgs">
+		<%
+		function getToday(time){
+		let year = time.getFullYear();
+		let month = time.getMonth() + 1;
+		let date = time.getDate();
+		let hour = addZero(time.getHours());
+		let min = addZero(time.getMinutes());
+		let sec = addZero(time.getSeconds());
+		let today = month + "/" + date + "-" + hour + ":" + min;
+		return today;}
+
+		function addZero(x){
+		if (x < 10) {x = "0"+x;}
+		return x;}
+		%>
+		<% for (var i in msgs) {%>
+		<li>[<%=getToday(msgs[i].time)%>] <%=msgs[i].name%> : <%=msgs[i].msg%></li>
+		<% } %>
+	</ul>
+</body>
 </html>

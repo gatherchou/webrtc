@@ -27,7 +27,6 @@ app.get('/', function(req, res){
 });
 
 app.get('/history', function(req, res){
-
     userModel.find({}, function(err, docs){
         res.render('history', {msgs: docs});
     });
