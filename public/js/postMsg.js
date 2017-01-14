@@ -1,6 +1,6 @@
 function postMsg(name, msg, time) {
 	var timestamp = getToday(time);
-	$messages.append($('<li>').text("[" + timestamp + "] " + name + ":" + msg));
+	$messages.append($('<li>').text("[" + timestamp + "] " + name + " : " + msg));
 }
 
 function getToday(time){

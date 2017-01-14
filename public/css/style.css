@@ -43,6 +43,7 @@ html, body {
 
 .msgs {
   margin: 0;
+  padding: 10px;
   border: 1px solid black;
   position: absolute;
   bottom: 4%;
@@ -50,6 +51,14 @@ html, body {
   height: 30%;
   overflow: auto;
   font-size: 150%;
+}
+
+.msgs :nth-child(odd) { 
+  background: #eee; 
+}
+
+.ul li{
+  word-wrap: break-word;
 }
 
 .btn {
