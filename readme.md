@@ -4,7 +4,7 @@
 
 ## start server
 
-    # node index.js
+    # node server.js
 
 ## access
 
