@@ -607,6 +607,7 @@ function chatHistory() {
 function postMsg(name, msg) {
   var timestamp = getToday();
   $messages.append($('<li>').text("[" + timestamp + "] " + name + " : " + msg));
+  scrollBottom();
 }
 
 function getToday(){
@@ -618,7 +619,7 @@ function getToday(){
   let min = addZero(now.getMinutes());
   let sec = addZero(now.getSeconds());
 
-  let today = month + "/" + date + "-" + hour + ":" + min;
+  let today = /*month + "/" + date + "-" + */hour + ":" + min + ":" + sec;
 
   return today;
 }
@@ -629,4 +630,9 @@ function addZero(x){
   }
 
   return x;
+}
+
+function scrollBottom(){
+  var $sh = $messages[0].scrollHeight;
+  $messages.scrollTop($sh);
 }
