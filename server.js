@@ -27,7 +27,11 @@ app.get('/', function(req, res){
 });
 
 app.get('/history', function(req, res){
-    userModel.find({}, function(err, docs){
+    let time = new Date();                  
+    time.setHours(time.getHours() - 3);     // get the time of 3 hours age;
+
+    /* query the 3 hours of histories  */
+    userModel.find({"time":{$gte:time}}, function(err, docs){
         res.render('history', {msgs: docs});
     });
 })
